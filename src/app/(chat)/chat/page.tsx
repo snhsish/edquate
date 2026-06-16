@@ -26,6 +26,11 @@ import {
   Check,
   Brain,
   X,
+  Share2,
+  Download,
+  FileJson,
+  FileText,
+  EyeOff,
 } from "lucide-react"
 
 const chatModes = [
@@ -76,11 +81,14 @@ export default function ChatPage() {
     isStreaming,
     isLoadingSession,
     statusMessage,
+    title,
+    setTitle,
     sendMessage,
   } = useChat()
   const [input, setInput] = useState("")
   const [mode, setMode] = useState("deep_learn")
   const [memoryFacets, setMemoryFacets] = useState<string[]>([])
+  const [isTemporary, setIsTemporary] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -116,6 +124,79 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-1 flex-col">
+      <header className="flex items-center justify-between border-b px-4 py-3">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground"
+            placeholder="Chat title"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(
+                messages.map((m) => `${m.role === "user" ? "You" : "AI"}: ${m.content}`).join("\n\n")
+              )
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <Share2 className="size-3.5" />
+            Share
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors">
+                <Download className="size-3.5" />
+                Download
+                <ChevronDown className="size-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={() => {
+                  const md = messages.map((m) => `### ${m.role === "user" ? "You" : "AI"}\n\n${m.content}`).join("\n\n---\n\n")
+                  const blob = new Blob([md], { type: "text/markdown" })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement("a")
+                  a.href = url
+                  a.download = `${title || "chat"}.md`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                }}
+              >
+                <FileText className="mr-2 size-4" />
+                Markdown
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  const json = JSON.stringify({ title, messages }, null, 2)
+                  const blob = new Blob([json], { type: "application/json" })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement("a")
+                  a.href = url
+                  a.download = `${title || "chat"}.json`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                }}
+              >
+                <FileJson className="mr-2 size-4" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button
+            onClick={() => setIsTemporary(!isTemporary)}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${isTemporary ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            <EyeOff className="size-3.5" />
+            Temporary chat
+          </button>
+        </div>
+      </header>
+
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4 pb-0">
           {messages.length === 0 && (
@@ -207,13 +288,13 @@ export default function ChatPage() {
             </div>
           )}
 
-          <div ref={bottomRef} className="h-36" />
+          <div ref={bottomRef} className="h-40" />
         </div>
       </div>
 
-      <div className="sticky bottom-0 z-10 border-t bg-background p-4">
+      <div className="sticky bottom-0 z-10 p-4">
         <div className="mx-auto max-w-3xl">
-          <div className="rounded-2xl border bg-background shadow-lg">
+          <div className="rounded-2xl border bg-background/80 shadow-lg backdrop-blur-sm">
             <div className="p-4">
               {memoryFacets.length > 0 && (
                 <div className="mb-2 flex flex-wrap gap-1.5">
@@ -258,7 +339,7 @@ export default function ChatPage() {
               )}
             </div>
             {!isStreaming && (
-              <div className="flex items-center gap-1 border-t px-3 py-2">
+              <div className="flex items-center gap-1 px-3 py-2">
                 <button className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors">
                   <Paperclip className="size-3.5" />
                   Attach
@@ -338,7 +419,7 @@ export default function ChatPage() {
                 <button
                   onClick={handleSend}
                   disabled={!input.trim()}
-                  className="flex size-8 items-center justify-center rounded-full bg-[#e8593a] text-white hover:bg-[#d94e32] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ArrowUp className="size-4" />
                 </button>

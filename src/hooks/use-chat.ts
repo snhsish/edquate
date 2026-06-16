@@ -21,6 +21,8 @@ interface UseChatReturn {
   isLoadingSession: boolean
   sessionId: string | null
   statusMessage: string | null
+  title: string
+  setTitle: (title: string) => void
   sendMessage: (content: string, mode?: string, memoryFacets?: string[]) => Promise<void>
   clearChat: () => void
 }
@@ -32,6 +34,7 @@ export function useChat(): UseChatReturn {
   const [isLoadingSession, setIsLoadingSession] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [title, setTitle] = useState<string>("New chat")
   const abortRef = useRef<AbortController | null>(null)
 
   const sendMessage = useCallback(
@@ -141,6 +144,8 @@ export function useChat(): UseChatReturn {
     isLoadingSession,
     sessionId,
     statusMessage,
+    title,
+    setTitle,
     sendMessage,
     clearChat,
   }
