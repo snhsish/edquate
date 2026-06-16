@@ -21,7 +21,7 @@ interface UseChatReturn {
   isLoadingSession: boolean
   sessionId: string | null
   statusMessage: string | null
-  sendMessage: (content: string) => Promise<void>
+  sendMessage: (content: string, mode?: string, memoryFacets?: string[]) => Promise<void>
   clearChat: () => void
 }
 
@@ -35,7 +35,7 @@ export function useChat(): UseChatReturn {
   const abortRef = useRef<AbortController | null>(null)
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, mode = "deep_learn", memoryFacets?: string[]) => {
       if (!content.trim() || isStreaming) return
 
       setIsStreaming(true)
@@ -50,7 +50,7 @@ export function useChat(): UseChatReturn {
 
         if (!sid) {
           setIsLoadingSession(true)
-          const session = await createSession()
+          const session = await createSession("New chat", mode)
           sid = session.session_id
           setSessionId(sid)
           setIsLoadingSession(false)
@@ -62,7 +62,7 @@ export function useChat(): UseChatReturn {
         let fullResponse = ""
 
         await chatStream(
-          { message: content, session_id: sid },
+          { message: content, session_id: sid, mode, ...(memoryFacets && memoryFacets.length > 0 ? { memory_facets: memoryFacets } : {}) },
           (event: SSEEvent) => {
             switch (event.type) {
               case "status":
