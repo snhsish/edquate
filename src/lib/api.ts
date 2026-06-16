@@ -156,3 +156,153 @@ export async function logout(): Promise<void> {
     clearToken()
   }
 }
+
+// ── Chat Types ──────────────────────────────────────────────────────────
+
+export interface Message {
+  id: number
+  session_id: string
+  role: "user" | "assistant"
+  content: string
+  capability: string
+  events: unknown[]
+  attachments: unknown[]
+  metadata: Record<string, unknown>
+  created_at: string
+  parent_message_id: number | null
+}
+
+export interface Session {
+  id: string
+  session_id: string
+  title: string
+  created_at: string
+  updated_at: string
+  status: string
+  is_shared: boolean
+  preferences: { mode: string; selected_branches: Record<string, number> }
+  messages: Message[]
+  active_turns: unknown[]
+}
+
+export interface ChatStreamRequest {
+  message: string
+  session_id?: string
+  mode?: string
+  kb_name?: string
+  enable_rag?: boolean
+  memory_facets?: string[]
+}
+
+export type SSEStatusEvent = { type: "status"; stage: string; message: string }
+export type SSEStreamEvent = { type: "stream"; content: string }
+export type SSEDoneEvent = { type: "done" }
+export type SSEErrorEvent = { type: "error"; message: string }
+export type SSEUpgradeRequiredEvent = { type: "upgrade_required"; feature: string; message: string; code: string }
+
+export type SSEEvent =
+  | SSEStatusEvent
+  | SSEStreamEvent
+  | SSEDoneEvent
+  | SSEErrorEvent
+  | SSEUpgradeRequiredEvent
+
+// ── Chat API Functions ──────────────────────────────────────────────────
+
+export async function createSession(title = "New chat", mode = "deep_learn"): Promise<Session> {
+  return authFetch<Session>("/sessions/", {
+    method: "POST",
+    body: JSON.stringify({ title, mode }),
+  })
+}
+
+export async function getSession(sessionId: string): Promise<Session> {
+  return authFetch<Session>(`/sessions/${sessionId}`)
+}
+
+export async function listSessions(limit = 50, offset = 0): Promise<Session[]> {
+  return authFetch<Session[]>(`/sessions/?limit=${limit}&offset=${offset}`)
+}
+
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  const token = getStoredToken()
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  if (token) headers["Authorization"] = `Bearer ${token}`
+  return headers
+}
+
+export async function chatStream(
+  request: ChatStreamRequest,
+  onEvent: (event: SSEEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const res = await fetch(`${API_BASE}/chat/stream`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(request),
+    credentials: "include",
+    signal,
+  })
+
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`
+    try {
+      const body = await res.json()
+      if (body.detail) detail = body.detail
+      else if (body.error) detail = body.error
+      else if (body.message) detail = body.message
+    } catch {
+      if (res.statusText) detail = `${res.status} ${res.statusText}`
+    }
+    throw new Error(detail)
+  }
+
+  const reader = res.body?.getReader()
+  if (!reader) throw new Error("Response body is not readable")
+
+  const decoder = new TextDecoder()
+  let buffer = ""
+  let currentEvent = ""
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split("\n")
+    buffer = lines.pop() || ""
+
+    for (const line of lines) {
+      if (line.startsWith("event: ")) {
+        currentEvent = line.slice(7).trim()
+      } else if (line.startsWith("data: ")) {
+        const raw = line.slice(6)
+        try {
+          const data = JSON.parse(raw)
+          switch (currentEvent) {
+            case "status":
+              onEvent({ type: "status", stage: data.stage, message: data.message })
+              break
+            case "stream":
+              onEvent({ type: "stream", content: data.content })
+              break
+            case "done":
+              onEvent({ type: "done" })
+              break
+            case "error":
+              onEvent({ type: "error", message: data.message })
+              break
+            case "upgrade_required":
+              onEvent({ type: "upgrade_required", feature: data.feature, message: data.message, code: data.code })
+              break
+          }
+        } catch {
+          // skip malformed JSON
+        }
+        currentEvent = ""
+      }
+    }
+  }
+}
