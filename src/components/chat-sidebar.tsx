@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
@@ -204,13 +205,13 @@ export function ChatSidebar({ ...props }: React.ComponentProps<"div">) {
           {navData.learn.map((item) => (
             <Tooltip key={item.title}>
               <TooltipTrigger asChild>
-                <a
+                <Link
                   href={item.url}
                   className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${activeItem?.title === item.title ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground"}`}
                 >
                   <item.icon className="size-4" />
                   <span className="sr-only">{item.title}</span>
-                </a>
+                </Link>
               </TooltipTrigger>
               <TooltipContent side="right" align="center">{item.title}</TooltipContent>
             </Tooltip>
@@ -219,13 +220,13 @@ export function ChatSidebar({ ...props }: React.ComponentProps<"div">) {
           {navData.tools.map((item) => (
             <Tooltip key={item.title}>
               <TooltipTrigger asChild>
-                <a
+                <Link
                   href={item.url}
                   className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${activeItem?.title === item.title ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground"}`}
                 >
                   <item.icon className="size-4" />
                   <span className="sr-only">{item.title}</span>
-                </a>
+                </Link>
               </TooltipTrigger>
               <TooltipContent side="right" align="center">{item.title}</TooltipContent>
             </Tooltip>
@@ -234,13 +235,13 @@ export function ChatSidebar({ ...props }: React.ComponentProps<"div">) {
           {navData.progress.map((item) => (
             <Tooltip key={item.title}>
               <TooltipTrigger asChild>
-                <a
+                <Link
                   href={item.url}
                   className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${activeItem?.title === item.title ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground"}`}
                 >
                   <item.icon className="size-4" />
                   <span className="sr-only">{item.title}</span>
-                </a>
+                </Link>
               </TooltipTrigger>
               <TooltipContent side="right" align="center">{item.title}</TooltipContent>
             </Tooltip>
@@ -267,7 +268,7 @@ export function ChatSidebar({ ...props }: React.ComponentProps<"div">) {
           </div>
         <div className="flex min-h-0 flex-1 flex-col gap-0 overflow-auto">
             {filteredChats.map((chat) => (
-              <a
+              <Link
                 key={chat.id}
                 href={`/chat/${chat.id}`}
                 className="flex items-center justify-between gap-2 border-b px-4 py-3 text-sm last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
@@ -300,7 +301,7 @@ export function ChatSidebar({ ...props }: React.ComponentProps<"div">) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </a>
+              </Link>
             ))}
           </div>
         </div>

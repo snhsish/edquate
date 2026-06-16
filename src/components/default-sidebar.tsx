@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import Image from "next/image"
 import { useTheme } from "next-themes"
 import {
@@ -148,10 +149,10 @@ export function DefaultSidebar({ ...props }: React.ComponentProps<typeof Sidebar
                 >
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip={item.title}>
-                      <a href={item.url}>
+                      <Link href={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuAction>
@@ -163,9 +164,9 @@ export function DefaultSidebar({ ...props }: React.ComponentProps<typeof Sidebar
                       <SidebarMenuSub>
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild>
-                            <a href={item.url}>
+                            <Link href={item.url}>
                               <span>View all {item.title}</span>
-                            </a>
+                            </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>
@@ -175,10 +176,10 @@ export function DefaultSidebar({ ...props }: React.ComponentProps<typeof Sidebar
               ) : (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )
@@ -198,10 +199,10 @@ export function DefaultSidebar({ ...props }: React.ComponentProps<typeof Sidebar
                 >
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip={item.title}>
-                      <a href={item.url}>
+                      <Link href={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuAction>
@@ -213,9 +214,9 @@ export function DefaultSidebar({ ...props }: React.ComponentProps<typeof Sidebar
                       <SidebarMenuSub>
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild>
-                            <a href={item.url}>
+                            <Link href={item.url}>
                               <span>View all {item.title}</span>
-                            </a>
+                            </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       </SidebarMenuSub>
@@ -225,10 +226,10 @@ export function DefaultSidebar({ ...props }: React.ComponentProps<typeof Sidebar
               ) : (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )
@@ -242,10 +243,10 @@ export function DefaultSidebar({ ...props }: React.ComponentProps<typeof Sidebar
             {data.progress.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <a href={item.url}>
+                  <Link href={item.url}>
                     <item.icon />
                     <span>{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
