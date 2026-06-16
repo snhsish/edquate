@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { useAuth } from "@/lib/auth-context"
 import { useChat } from "@/hooks/use-chat"
 import { Button } from "@/components/ui/button"
@@ -107,10 +109,16 @@ export default function ChatPage() {
                 className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                    : "bg-muted prose prose-sm dark:prose-invert max-w-none"
                 }`}
               >
-                {msg.content}
+                {msg.role === "user" ? (
+                  msg.content
+                ) : (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                )}
               </div>
             </div>
           ))}
@@ -121,8 +129,12 @@ export default function ChatPage() {
                 <AvatarImage src="/icons/edquate.png" alt="Edquate AI" />
                 <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">AI</AvatarFallback>
               </Avatar>
-              <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-2.5 text-sm leading-relaxed">
-                {streamingContent || (
+              <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-2.5 text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+                {streamingContent ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {streamingContent}
+                  </ReactMarkdown>
+                ) : (
                   <span className="inline-flex gap-1">
                     <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]" />
                     <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]" />
