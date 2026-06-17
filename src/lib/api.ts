@@ -240,6 +240,60 @@ export async function getSession(sessionId: string): Promise<Session> {
   return authFetch<Session>(`/sessions/${sessionId}`)
 }
 
+export interface ChatSessionSummary {
+  id: string
+  session_id: string
+  title: string
+  last_message?: string
+  message_count?: number
+  updated_at?: number
+  preferences?: { mode?: string }
+}
+
+export async function listChatSessions(limit = 50, offset = 0): Promise<ChatSessionSummary[]> {
+  const data = await authFetch<unknown>(`/sessions/?limit=${limit}&offset=${offset}`)
+  if (Array.isArray(data)) return data as ChatSessionSummary[]
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>
+    if (Array.isArray(obj.sessions)) return obj.sessions as ChatSessionSummary[]
+    if (Array.isArray(obj.items)) return obj.items as ChatSessionSummary[]
+    if (Array.isArray(obj.data)) return obj.data as ChatSessionSummary[]
+  }
+  return []
+}
+
+export async function updateSessionTitle(sessionId: string, title: string): Promise<void> {
+  const token = getStoredToken()
+  const res = await fetch(`${API_BASE}/sessions/${encodeURIComponent(sessionId)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ title }),
+    credentials: "include",
+  })
+  if (!res.ok) {
+    if (res.status === 401) { broadcastTokenExpired(); return }
+    throw new Error(`Failed to rename session (${res.status})`)
+  }
+}
+
+export async function deleteChatSession(sessionId: string): Promise<void> {
+  const token = getStoredToken()
+  const res = await fetch(`${API_BASE}/sessions/${encodeURIComponent(sessionId)}`, {
+    method: "DELETE",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: "include",
+  })
+  if (!res.ok) {
+    if (res.status === 401) { broadcastTokenExpired(); return }
+    throw new Error(`Failed to delete session (${res.status})`)
+  }
+}
+
 export async function listSessions(limit = 50, offset = 0): Promise<Session[]> {
   const data = await authFetch<unknown>(`/sessions/?limit=${limit}&offset=${offset}`)
   if (Array.isArray(data)) return data
