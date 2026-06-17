@@ -26,6 +26,6 @@ docker compose up -d --build
 
 Configure GitHub repo secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`.
 
-The container listens on `127.0.0.1:3201` on the server (for nginx upstream). API calls proxy to `https://v2.edquate.com:8443` — no backend runs in this container.
+The standalone container is `edquate-standalone-frontend` on host port `127.0.0.1:3202` (Ravan's frontend uses `edquate-frontend` on `3201`). Point nginx at `3202` for this app. API calls proxy to `https://v2.edquate.com:8443`.
 
 See `backend-api-doc.md` for the API reference.

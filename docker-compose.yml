@@ -9,10 +9,10 @@ services:
       args:
         API_BACKEND_URL: ${API_BACKEND_URL:-https://v2.edquate.com:8443}
         NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-/api/v2}
-    container_name: edquate-frontend
+    container_name: edquate-standalone-frontend
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3201:3200"
+      - "127.0.0.1:3202:3200"
     environment:
       PORT: "3200"
     healthcheck:
