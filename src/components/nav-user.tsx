@@ -1,10 +1,11 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -24,17 +25,35 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { ChevronsUpDownIcon, SparklesIcon, BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon, SunIcon, MoonIcon, MonitorIcon, CheckIcon } from "lucide-react"
+import { ChevronsUpDownIcon, SparklesIcon, BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon, SunIcon, MoonIcon, MonitorIcon, CheckIcon, CrownIcon, ZapIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { fetchSubscription, type SubscriptionInfo, type PlanId } from "@/lib/billing-api"
 
 export function NavUser() {
   const { isMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
   const { user, logout } = useAuth()
+  const router = useRouter()
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const data = await fetchSubscription()
+        if (!cancelled) setSubscription(data)
+      } catch {
+        // silent — plan badge is non-critical
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   const displayName = user?.display_name || user?.username?.split("@")[0] || "User"
   const email = user?.username || ""
   const initials = displayName.charAt(0).toUpperCase()
+  const currentPlan = (subscription?.plan ?? "free") as PlanId
+  const isPaid = currentPlan === "plus" || currentPlan === "pro"
 
   return (
     <SidebarMenu>
@@ -72,29 +91,48 @@ export function NavUser() {
                 </div>
               </div>
             </DropdownMenuLabel>
+            {isPaid && (
+              <>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5">
+                  <div className="flex items-center gap-2 rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                    <span className="flex items-center gap-1">
+                      {currentPlan === "pro" ? (
+                        <CrownIcon className="h-3 w-3" />
+                      ) : currentPlan === "plus" ? (
+                        <ZapIcon className="h-3 w-3" />
+                      ) : null}
+                      <span>{currentPlan === "pro" ? "Pro" : "Plus"} plan active</span>
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {subscription?.days_remaining != null
+                      ? `${subscription.days_remaining} days remaining`
+                      : ""}
+                  </p>
+                </div>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <SparklesIcon
-                />
+              <DropdownMenuItem onClick={() => router.push("/billing/upgrade")}>
+                <SparklesIcon />
                 Upgrade to Pro
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <BadgeCheckIcon
-                />
+                <BadgeCheckIcon />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon
-                />
+              <DropdownMenuItem onClick={() => router.push("/billing")}>
+                <CreditCardIcon />
                 Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <BellIcon
-                />
+                <BellIcon />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -132,8 +170,7 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => logout()}>
-              <LogOutIcon
-              />
+              <LogOutIcon />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -282,6 +282,7 @@ export default function Home() {
               </div>
             ))}
           </div>
+          <div className="h-32" />
         </div>
 
         <div className="flex flex-col gap-4">

@@ -46,7 +46,7 @@ export interface StatusResponse {
   display_name?: string
 }
 
-function getStoredToken(): string | null {
+export function getStoredToken(): string | null {
   if (typeof window === "undefined") return null
   const token = localStorage.getItem(TOKEN_KEY)
   const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY)

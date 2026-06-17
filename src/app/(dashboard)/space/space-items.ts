@@ -46,13 +46,13 @@ export const SPACE_ITEMS: SpaceItem[] = [
     description: "Your learner graph — journey, strengths, gaps, preferences.",
     icon: Brain,
   },
-  {
-    key: "knowledge",
-    href: "/space/knowledge",
-    label: "Knowledge",
-    description: "Knowledge bases indexed with HashEmbed and pgvector.",
-    icon: Library,
-  },
+  // {
+  //   key: "knowledge",
+  //   href: "/space/knowledge",
+  //   label: "Knowledge",
+  //   description: "Knowledge bases indexed with HashEmbed and pgvector.",
+  //   icon: Library,
+  // },
   {
     key: "books",
     href: "/space/books",
@@ -60,11 +60,11 @@ export const SPACE_ITEMS: SpaceItem[] = [
     description: "Generated books with exploration insights.",
     icon: BookOpen,
   },
-  {
-    key: "notebooks",
-    href: "/space/notebooks",
-    label: "Notebooks",
-    description: "Saved notes from chat, books, code lab, and agents.",
-    icon: NotebookPen,
-  },
+  // {
+  //   key: "notebooks",
+  //   href: "/space/notebooks",
+  //   label: "Notebooks",
+  //   description: "Saved notes from chat, books, code lab, and agents.",
+  //   icon: NotebookPen,
+  // },
 ]
