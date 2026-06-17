@@ -182,6 +182,9 @@
   html {
     @apply font-sans;
   }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
   .prose hr {
     border-color: var(--color-border);
   }

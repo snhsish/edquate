@@ -14,6 +14,10 @@ interface LocalMessage {
   content: string
 }
 
+interface UseChatOptions {
+  onNewSessionComplete?: (sessionId: string) => void
+}
+
 interface UseChatReturn {
   messages: LocalMessage[]
   streamingContent: string | null
@@ -27,7 +31,7 @@ interface UseChatReturn {
   clearChat: () => void
 }
 
-export function useChat(): UseChatReturn {
+export function useChat(options?: UseChatOptions): UseChatReturn {
   const [messages, setMessages] = useState<LocalMessage[]>([])
   const [streamingContent, setStreamingContent] = useState<string | null>(null)
   const [isStreaming, setIsStreaming] = useState(false)
@@ -36,6 +40,9 @@ export function useChat(): UseChatReturn {
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [title, setTitle] = useState<string>("New chat")
   const abortRef = useRef<AbortController | null>(null)
+  const isNewSessionRef = useRef(false)
+  const onNewSessionCompleteRef = useRef(options?.onNewSessionComplete)
+  onNewSessionCompleteRef.current = options?.onNewSessionComplete
 
   const sendMessage = useCallback(
     async (content: string, mode = "deep_learn", memoryFacets?: string[]) => {
@@ -48,15 +55,16 @@ export function useChat(): UseChatReturn {
       const userMessage: LocalMessage = { role: "user", content }
       setMessages((prev) => [...prev, userMessage])
 
-      try {
-        let sid = sessionId
+      let sid = sessionId
 
+      try {
         if (!sid) {
           setIsLoadingSession(true)
           const session = await createSession("New chat", mode)
           sid = session.session_id
           setSessionId(sid)
           setIsLoadingSession(false)
+          isNewSessionRef.current = true
         }
 
         const abortController = new AbortController()
@@ -123,6 +131,10 @@ export function useChat(): UseChatReturn {
       } finally {
         setIsStreaming(false)
         abortRef.current = null
+        if (isNewSessionRef.current && sid) {
+          isNewSessionRef.current = false
+          onNewSessionCompleteRef.current?.(sid)
+        }
       }
     },
     [isStreaming, sessionId],

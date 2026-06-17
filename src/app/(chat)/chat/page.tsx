@@ -31,6 +31,8 @@ import {
   FileJson,
   FileText,
   EyeOff,
+  Plus,
+  MoreVertical,
 } from "lucide-react"
 
 const chatModes = [
@@ -80,11 +82,15 @@ export default function ChatPage() {
     streamingContent,
     isStreaming,
     isLoadingSession,
+    sessionId,
     statusMessage,
     title,
     setTitle,
     sendMessage,
-  } = useChat()
+    clearChat,
+  } = useChat({
+    onNewSessionComplete: (sid) => window.history.replaceState(null, "", `/chat/${sid}`),
+  })
   const [input, setInput] = useState("")
   const [mode, setMode] = useState("deep_learn")
   const [memoryFacets, setMemoryFacets] = useState<string[]>([])
@@ -134,162 +140,165 @@ export default function ChatPage() {
             placeholder="Chat title"
           />
         </div>
-        <div className="flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-1">
           <button
-            onClick={() => {
-              navigator.clipboard.writeText(
-                messages.map((m) => `${m.role === "user" ? "You" : "AI"}: ${m.content}`).join("\n\n")
-              )
-            }}
+            onClick={() => clearChat()}
             className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <Plus className="size-3.5" />
+            New Chat
+          </button>
+          <button
+            disabled
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground/50 cursor-not-allowed transition-colors"
           >
             <Share2 className="size-3.5" />
             Share
           </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors">
-                <Download className="size-3.5" />
-                Download
-                <ChevronDown className="size-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem
-                onClick={() => {
-                  const md = messages.map((m) => `### ${m.role === "user" ? "You" : "AI"}\n\n${m.content}`).join("\n\n---\n\n")
-                  const blob = new Blob([md], { type: "text/markdown" })
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement("a")
-                  a.href = url
-                  a.download = `${title || "chat"}.md`
-                  a.click()
-                  URL.revokeObjectURL(url)
-                }}
-              >
-                <FileText className="mr-2 size-4" />
-                Markdown
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  const json = JSON.stringify({ title, messages }, null, 2)
-                  const blob = new Blob([json], { type: "application/json" })
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement("a")
-                  a.href = url
-                  a.download = `${title || "chat"}.json`
-                  a.click()
-                  URL.revokeObjectURL(url)
-                }}
-              >
-                <FileJson className="mr-2 size-4" />
-                JSON
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <button
-            onClick={() => setIsTemporary(!isTemporary)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${isTemporary ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+            disabled
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground/50 cursor-not-allowed transition-colors"
+          >
+            <Download className="size-3.5" />
+            Download
+          </button>
+          <button
+            disabled
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors text-muted-foreground/50 cursor-not-allowed`}
           >
             <EyeOff className="size-3.5" />
             Temporary chat
           </button>
         </div>
+
+        <div className="flex md:hidden items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-muted transition-colors">
+                <MoreVertical className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => clearChat()}>
+                <Plus className="mr-2 size-4" />
+                New Chat
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <Share2 className="mr-2 size-4" />
+                Share
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <FileText className="mr-2 size-4" />
+                Download MD
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <FileJson className="mr-2 size-4" />
+                Download JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <EyeOff className="mr-2 size-4" />
+                Temporary chat
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
 
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4 pb-0">
-          {messages.length === 0 && (
-            <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
+        {messages.length === 0 ? (
+          <div className="grid h-full place-items-center">
+            <div className="flex flex-col items-center gap-6 p-8">
               <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10">
                 <MessageSquare className="size-8 text-primary" />
               </div>
               <div className="text-center">
-                <h2 className="text-xl font-semibold">Chat with Edquate AI</h2>
+                <h2 className="text-xl font-semibold">Welcome {user?.display_name || user?.username?.split("@")[0] || "User"}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Ask anything — I&apos;m here to help you learn.
+                  What would you like to learn today?
                 </p>
               </div>
             </div>
-          )}
-
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-            >
-              <Avatar className="mt-0.5 size-8 shrink-0">
-                {msg.role === "assistant" ? (
-                  <AvatarImage src="/icons/edquate.png" alt="Edquate AI" />
-                ) : null}
-                <AvatarFallback
-                  className={
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground text-xs"
-                      : "bg-secondary text-secondary-foreground text-xs"
-                  }
-                >
-                  {msg.role === "user"
-                    ? (user?.display_name?.charAt(0)?.toUpperCase() || "U")
-                    : "AI"}
-                </AvatarFallback>
-              </Avatar>
+          </div>
+        ) : (
+          <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4 pb-0">
+            {messages.map((msg, i) => (
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted prose prose-sm dark:prose-invert max-w-none"
-                }`}
+                key={i}
+                className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
               >
-                {msg.role === "user" ? (
-                  msg.content
-                ) : (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content}
-                  </ReactMarkdown>
-                )}
+                <Avatar className="mt-0.5 size-8 shrink-0">
+                  {msg.role === "assistant" ? (
+                    <AvatarImage src="/icons/edquate.png" alt="Edquate AI" />
+                  ) : null}
+                  <AvatarFallback
+                    className={
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground text-xs"
+                        : "bg-secondary text-secondary-foreground text-xs"
+                    }
+                  >
+                    {msg.role === "user"
+                      ? (user?.display_name?.charAt(0)?.toUpperCase() || "U")
+                      : "AI"}
+                  </AvatarFallback>
+                </Avatar>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted prose prose-sm dark:prose-invert max-w-none"
+                  }`}
+                >
+                  {msg.role === "user" ? (
+                    msg.content
+                  ) : (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
 
-          {streamingContent !== null && (
-            <div className="flex gap-3">
-              <Avatar className="mt-0.5 size-8 shrink-0">
-                <AvatarImage src="/icons/edquate.png" alt="Edquate AI" />
-                <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">AI</AvatarFallback>
-              </Avatar>
-              <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-2.5 text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
-                {streamingContent ? (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {streamingContent}
-                  </ReactMarkdown>
-                ) : (
-                  <span className="inline-flex gap-1">
-                    <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]" />
-                    <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]" />
-                    <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:300ms]" />
-                  </span>
-                )}
+            {streamingContent !== null && (
+              <div className="flex gap-3">
+                <Avatar className="mt-0.5 size-8 shrink-0">
+                  <AvatarImage src="/icons/edquate.png" alt="Edquate AI" />
+                  <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">AI</AvatarFallback>
+                </Avatar>
+                <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-2.5 text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+                  {streamingContent ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {streamingContent}
+                    </ReactMarkdown>
+                  ) : (
+                    <span className="inline-flex gap-1">
+                      <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:300ms]" />
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {statusMessage && !streamingContent && (
-            <div className="flex items-center justify-center gap-2 py-2">
-              <Sparkles className="size-3.5 animate-pulse text-primary" />
-              <span className="text-xs text-muted-foreground">{statusMessage}</span>
-            </div>
-          )}
+            {statusMessage && !streamingContent && (
+              <div className="flex items-center justify-center gap-2 py-2">
+                <Sparkles className="size-3.5 animate-pulse text-primary" />
+                <span className="text-xs text-muted-foreground">{statusMessage}</span>
+              </div>
+            )}
 
-          {isLoadingSession && (
-            <div className="flex items-center justify-center gap-2 py-2">
-              <Sparkles className="size-3.5 animate-pulse text-primary" />
-              <span className="text-xs text-muted-foreground">Starting chat session...</span>
-            </div>
-          )}
+            {isLoadingSession && (
+              <div className="flex items-center justify-center gap-2 py-2">
+                <Sparkles className="size-3.5 animate-pulse text-primary" />
+                <span className="text-xs text-muted-foreground">Starting chat session...</span>
+              </div>
+            )}
 
-          <div ref={bottomRef} className="h-40" />
-        </div>
+            <div ref={bottomRef} className="h-40" />
+          </div>
+        )}
       </div>
 
       <div className="sticky bottom-0 z-10 p-4">
@@ -428,6 +437,15 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+
+      {messages.length > 0 && (
+        <button
+          onClick={() => clearChat()}
+          className="fixed bottom-24 right-8 z-50 hidden md:flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+        >
+          <Plus className="size-5" />
+        </button>
+      )}
     </div>
   )
 }

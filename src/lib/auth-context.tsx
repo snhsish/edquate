@@ -9,6 +9,7 @@ import {
   register as apiRegister,
   logout as apiLogout,
   getUserFromToken,
+  onTokenExpired,
 } from "@/lib/api"
 
 interface AuthContextType {
@@ -79,6 +80,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     mounted.current = true
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    const unsub = onTokenExpired(() => {
+      setUser(null)
+      router.push("/login")
+    })
+    return unsub
+  }, [router])
 
   const login = useCallback(
     async (email: string, password: string) => {

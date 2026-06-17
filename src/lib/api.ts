@@ -2,7 +2,20 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4700/api/v
 
 const TOKEN_KEY = "eq_access_token"
 const TOKEN_EXPIRY_KEY = "eq_token_expiry"
-const TWENTY_EIGHT_DAYS_MS = 28 * 24 * 60 * 60 * 1000
+
+let _onTokenExpired: (() => void) | null = null
+
+export function onTokenExpired(callback: () => void) {
+  _onTokenExpired = callback
+  return () => { _onTokenExpired = null }
+}
+
+function broadcastTokenExpired() {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(TOKEN_EXPIRY_KEY)
+  if (_onTokenExpired) _onTokenExpired()
+  else window.location.href = "/login"
+}
 
 export interface AuthUser {
   user_id: string
@@ -48,7 +61,9 @@ function getStoredToken(): string | null {
 
 function storeToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token)
-  localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + TWENTY_EIGHT_DAYS_MS))
+  const payload = decodeJwtPayload(token)
+  const expMs = payload?.exp ? (payload.exp as number) * 1000 : Date.now() + 3600_000
+  localStorage.setItem(TOKEN_EXPIRY_KEY, String(expMs))
 }
 
 function clearToken() {
@@ -105,6 +120,10 @@ async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T>
   }
 
   if (!res.ok) {
+    if (res.status === 401) {
+      broadcastTokenExpired()
+      throw new Error("Session expired. Please log in again.")
+    }
     let detail = `HTTP ${res.status}`
     try {
       const body = await res.json()
@@ -210,10 +229,11 @@ export type SSEEvent =
 // ── Chat API Functions ──────────────────────────────────────────────────
 
 export async function createSession(title = "New chat", mode = "deep_learn"): Promise<Session> {
-  return authFetch<Session>("/sessions/", {
+  const data = await authFetch<{ session: Session } | Session>("/sessions/", {
     method: "POST",
     body: JSON.stringify({ title, mode }),
   })
+  return "session" in data ? data.session : data
 }
 
 export async function getSession(sessionId: string): Promise<Session> {
@@ -255,6 +275,10 @@ export async function chatStream(
   })
 
   if (!res.ok) {
+    if (res.status === 401) {
+      broadcastTokenExpired()
+      throw new Error("Session expired. Please log in again.")
+    }
     let detail = `HTTP ${res.status}`
     try {
       const body = await res.json()

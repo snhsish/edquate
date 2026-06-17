@@ -137,9 +137,13 @@ export function ChatSidebar({ ...props }: React.ComponentProps<"div">) {
   const { theme } = useTheme()
   const [search, setSearch] = React.useState("")
 
+  const isFirstLoad = React.useRef(true)
+
   React.useEffect(() => {
     let cancelled = false
-    setIsLoading(true)
+    if (isFirstLoad.current) {
+      setIsLoading(true)
+    }
     listSessions(50, 0)
       .then((sessions) => {
         if (!cancelled) setChats(sessions)
@@ -148,17 +152,20 @@ export function ChatSidebar({ ...props }: React.ComponentProps<"div">) {
         if (!cancelled) setChats([])
       })
       .finally(() => {
-        if (!cancelled) setIsLoading(false)
+        if (!cancelled) {
+          isFirstLoad.current = false
+          setIsLoading(false)
+        }
       })
     return () => { cancelled = true }
-  }, [])
+  }, [pathname])
 
   const filteredChats = chats.filter((chat) =>
     chat.title.toLowerCase().includes(search.toLowerCase())
   )
 
   const isExpanded = state === "expanded"
-  const activeItem = allNavItems.find((item) => item.url === pathname) || allNavItems[0]
+  const activeItem = allNavItems.find((item) => pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url + "/"))) || allNavItems[0]
 
   return (
     <div className="flex h-full">
@@ -231,7 +238,7 @@ export function ChatSidebar({ ...props }: React.ComponentProps<"div">) {
           <div className="flex flex-col gap-2 p-2 shrink-0 border-b">
             <div className="flex w-full items-center justify-between">
               <div className="text-base font-medium text-foreground">
-                {activeItem?.title}
+                {activeItem?.title === "Chat" ? "Your Chats" : activeItem?.title}
               </div>
             </div>
             <SidebarInput

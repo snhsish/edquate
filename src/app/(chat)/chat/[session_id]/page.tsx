@@ -32,6 +32,8 @@ import {
   FileJson,
   FileText,
   EyeOff,
+  Plus,
+  MoreVertical,
 } from "lucide-react"
 
 const chatModes = [
@@ -257,66 +259,67 @@ export default function SessionChatPage() {
             placeholder="Chat title"
           />
         </div>
-        <div className="flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-1">
           <button
-            onClick={() => {
-              navigator.clipboard.writeText(
-                messages.map((m) => `${m.role === "user" ? "You" : "AI"}: ${m.content}`).join("\n\n")
-              )
-            }}
+            onClick={() => router.push("/chat")}
             className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <Plus className="size-3.5" />
+            New Chat
+          </button>
+          <button
+            disabled
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground/50 cursor-not-allowed transition-colors"
           >
             <Share2 className="size-3.5" />
             Share
           </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors">
-                <Download className="size-3.5" />
-                Download
-                <ChevronDown className="size-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem
-                onClick={() => {
-                  const md = messages.map((m) => `### ${m.role === "user" ? "You" : "AI"}\n\n${m.content}`).join("\n\n---\n\n")
-                  const blob = new Blob([md], { type: "text/markdown" })
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement("a")
-                  a.href = url
-                  a.download = `${title || "chat"}.md`
-                  a.click()
-                  URL.revokeObjectURL(url)
-                }}
-              >
-                <FileText className="mr-2 size-4" />
-                Markdown
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  const json = JSON.stringify({ title, messages }, null, 2)
-                  const blob = new Blob([json], { type: "application/json" })
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement("a")
-                  a.href = url
-                  a.download = `${title || "chat"}.json`
-                  a.click()
-                  URL.revokeObjectURL(url)
-                }}
-              >
-                <FileJson className="mr-2 size-4" />
-                JSON
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <button
-            onClick={() => setIsTemporary(!isTemporary)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${isTemporary ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+            disabled
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground/50 cursor-not-allowed transition-colors"
+          >
+            <Download className="size-3.5" />
+            Download
+          </button>
+          <button
+            disabled
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors text-muted-foreground/50 cursor-not-allowed`}
           >
             <EyeOff className="size-3.5" />
             Temporary chat
           </button>
+        </div>
+
+        <div className="flex md:hidden items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-muted transition-colors">
+                <MoreVertical className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => router.push("/chat")}>
+                <Plus className="mr-2 size-4" />
+                New Chat
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <Share2 className="mr-2 size-4" />
+                Share
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <FileText className="mr-2 size-4" />
+                Download MD
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <FileJson className="mr-2 size-4" />
+                Download JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <EyeOff className="mr-2 size-4" />
+                Temporary chat
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -544,6 +547,14 @@ export default function SessionChatPage() {
           </div>
         </div>
       </div>
+
+      <button
+        onClick={() => router.push("/chat")}
+        className="fixed bottom-6 right-6 z-50 hidden md:flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors px-5 py-3"
+      >
+        <Plus className="size-5" />
+        <span className="text-sm font-medium">New Chat</span>
+      </button>
     </div>
   )
 }
