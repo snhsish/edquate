@@ -24,5 +24,5 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (!user) return null
 
-  return <>{children}</>
+  return <div className="flex flex-1 flex-col min-h-0 h-full">{children}</div>
 }

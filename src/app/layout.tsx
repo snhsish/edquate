@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Manrope, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { SidebarProvider } from "@/components/ui/sidebar"
 import { ThemeProvider } from "next-themes"
 import { AuthProvider } from "@/lib/auth-context"
 
@@ -39,13 +38,11 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${manrope.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="h-full flex flex-col overflow-hidden">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <TooltipProvider>
-              <SidebarProvider>
-                {children}
-              </SidebarProvider>
+              {children}
             </TooltipProvider>
           </AuthProvider>
         </ThemeProvider>

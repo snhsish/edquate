@@ -221,7 +221,15 @@ export async function getSession(sessionId: string): Promise<Session> {
 }
 
 export async function listSessions(limit = 50, offset = 0): Promise<Session[]> {
-  return authFetch<Session[]>(`/sessions/?limit=${limit}&offset=${offset}`)
+  const data = await authFetch<unknown>(`/sessions/?limit=${limit}&offset=${offset}`)
+  if (Array.isArray(data)) return data
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>
+    if (Array.isArray(obj.sessions)) return obj.sessions
+    if (Array.isArray(obj.items)) return obj.items
+    if (Array.isArray(obj.data)) return obj.data
+  }
+  return []
 }
 
 export async function getAuthHeaders(): Promise<Record<string, string>> {

@@ -12,9 +12,9 @@ export default function ChatLayout({
 }) {
   return (
     <AuthGuard>
-      <SidebarProvider>
+      <SidebarProvider className="flex min-h-0 h-full overflow-hidden">
         <ChatSidebar />
-        <SidebarInset>
+        <SidebarInset className="min-h-0 overflow-y-auto">
           {children}
         </SidebarInset>
       </SidebarProvider>

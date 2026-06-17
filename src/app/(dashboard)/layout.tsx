@@ -12,9 +12,9 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthGuard>
-      <SidebarProvider>
+      <SidebarProvider className="flex min-h-0 h-full overflow-hidden">
         <DefaultSidebar />
-        <SidebarInset>
+        <SidebarInset className="min-h-0 overflow-y-auto">
           {children}
         </SidebarInset>
       </SidebarProvider>

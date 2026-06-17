@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { useAuth } from "@/lib/auth-context"
-import { useChat } from "@/hooks/use-chat"
+import { getSession, chatStream, type Session, type Message, type SSEEvent } from "@/lib/api"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -73,26 +74,60 @@ const memoryFacetOptions = [
   { id: "preferences", label: "Preferences", description: "Style, pace, and goals" },
 ]
 
-export default function ChatPage() {
+interface LocalMessage {
+  id?: number
+  role: "user" | "assistant"
+  content: string
+}
+
+export default function SessionChatPage() {
+  const params = useParams()
+  const router = useRouter()
+  const sessionId = params.session_id as string
   const { user } = useAuth()
-  const {
-    messages,
-    streamingContent,
-    isStreaming,
-    isLoadingSession,
-    statusMessage,
-    title,
-    setTitle,
-    sendMessage,
-  } = useChat()
+
+  const [session, setSession] = useState<Session | null>(null)
+  const [messages, setMessages] = useState<LocalMessage[]>([])
+  const [streamingContent, setStreamingContent] = useState<string | null>(null)
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [input, setInput] = useState("")
   const [mode, setMode] = useState("deep_learn")
   const [memoryFacets, setMemoryFacets] = useState<string[]>([])
   const [isTemporary, setIsTemporary] = useState(false)
+  const [title, setTitle] = useState("Chat")
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const activeMode = chatModes.find((m) => m.id === mode) || chatModes[0]
+
+  useEffect(() => {
+    let cancelled = false
+    setIsLoading(true)
+    getSession(sessionId)
+      .then((s) => {
+        if (cancelled) return
+        setSession(s)
+        setTitle(s.title)
+        setMode(s.preferences?.mode || "deep_learn")
+        setMessages(
+          s.messages.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+          }))
+        )
+      })
+      .catch(() => {
+        if (!cancelled) router.push("/chat")
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [sessionId, router])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -108,6 +143,83 @@ export default function ChatPage() {
     }
   }
 
+  const sendMessage = async (content: string, msgMode: string, facets: string[]) => {
+    if (!content.trim() || isStreaming) return
+
+    setIsStreaming(true)
+    setStreamingContent("")
+    setStatusMessage(null)
+
+    const userMessage: LocalMessage = { role: "user", content }
+    setMessages((prev) => [...prev, userMessage])
+
+    try {
+      const abortController = new AbortController()
+      abortRef.current = abortController
+
+      let fullResponse = ""
+
+      await chatStream(
+        {
+          message: content,
+          session_id: sessionId,
+          mode: msgMode,
+          ...(facets && facets.length > 0 ? { memory_facets: facets } : {}),
+        },
+        (event: SSEEvent) => {
+          switch (event.type) {
+            case "status":
+              setStatusMessage(event.message)
+              break
+            case "stream":
+              fullResponse += event.content
+              setStreamingContent(fullResponse)
+              break
+            case "done":
+              setMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: fullResponse },
+              ])
+              setStreamingContent(null)
+              setStatusMessage(null)
+              break
+            case "error":
+              setStreamingContent(null)
+              setStatusMessage(null)
+              setMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: `Error: ${event.message}` },
+              ])
+              break
+            case "upgrade_required":
+              setStreamingContent(null)
+              setStatusMessage(null)
+              setMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: `Upgrade required: ${event.message}` },
+              ])
+              break
+          }
+        },
+        abortController.signal,
+      )
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return
+      setStreamingContent(null)
+      setStatusMessage(null)
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Error: ${err instanceof Error ? err.message : "Something went wrong"}`,
+        },
+      ])
+    } finally {
+      setIsStreaming(false)
+      abortRef.current = null
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -120,6 +232,17 @@ export default function ChatPage() {
     const el = e.target
     el.style.height = "auto"
     el.style.height = Math.min(el.scrollHeight, 200) + "px"
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Sparkles className="size-4 animate-pulse text-primary" />
+          <span className="text-sm">Loading chat...</span>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -205,9 +328,9 @@ export default function ChatPage() {
                 <MessageSquare className="size-8 text-primary" />
               </div>
               <div className="text-center">
-                <h2 className="text-xl font-semibold">Chat with Edquate AI</h2>
+                <h2 className="text-xl font-semibold">{title}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Ask anything — I&apos;m here to help you learn.
+                  Continue the conversation or start a new topic.
                 </p>
               </div>
             </div>
@@ -278,13 +401,6 @@ export default function ChatPage() {
             <div className="flex items-center justify-center gap-2 py-2">
               <Sparkles className="size-3.5 animate-pulse text-primary" />
               <span className="text-xs text-muted-foreground">{statusMessage}</span>
-            </div>
-          )}
-
-          {isLoadingSession && (
-            <div className="flex items-center justify-center gap-2 py-2">
-              <Sparkles className="size-3.5 animate-pulse text-primary" />
-              <span className="text-xs text-muted-foreground">Starting chat session...</span>
             </div>
           )}
 
