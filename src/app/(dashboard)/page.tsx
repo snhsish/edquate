@@ -121,7 +121,7 @@ const quickActions = [
   },
   {
     title: "Agents",
-    description: "Manage TutorBots",
+    description: "Manage agents",
     icon: Bot,
     url: "/agents",
   },

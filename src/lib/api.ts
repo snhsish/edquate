@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4700/api/v2"
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4700/api/v2"
 
 const TOKEN_KEY = "eq_access_token"
 const TOKEN_EXPIRY_KEY = "eq_token_expiry"
