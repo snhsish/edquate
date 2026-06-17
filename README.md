@@ -26,6 +26,13 @@ docker compose up -d --build
 
 Configure GitHub repo secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`.
 
-The standalone container is `edquate-standalone-frontend` on host port `127.0.0.1:3202` (Ravan's frontend uses `edquate-frontend` on `3201`). Point nginx at `3202` for this app. API calls proxy to `https://v2.edquate.com:8443`.
+The standalone container is `edquate-standalone-frontend` on host port `127.0.0.1:3202`. Nginx (Ravan stack) exposes it at **https://v2.edquate.com:8500**. The old frontend stays on **https://v2.edquate.com:8443**.
+
+| URL | Frontend |
+|-----|----------|
+| `https://v2.edquate.com:8443` | Ravan (`edquate-frontend` → port 3201) |
+| `https://v2.edquate.com:8500` | Standalone (`edquate-standalone-frontend` → port 3202) |
+
+API calls from the standalone app proxy to `https://v2.edquate.com:8443` (same backend as the old site).
 
 See `backend-api-doc.md` for the API reference.
