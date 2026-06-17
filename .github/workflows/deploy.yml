@@ -20,8 +20,10 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /opt/edquate
+            docker network inspect edquate-internal >/dev/null 2>&1 || docker network create edquate-internal
+            cd ~/newfrontend/edquate
             git pull origin main
             docker compose up -d --build --remove-orphans
+            docker network connect edquate-internal edquate-nginx 2>/dev/null || true
             docker compose exec -T frontend wget -qO- http://127.0.0.1:3200/ || exit 1
             echo "Frontend deploy complete"

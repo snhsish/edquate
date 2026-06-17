@@ -14,14 +14,29 @@ docker compose up -d --build --remove-orphans
 
 ### First-time server setup
 
-On the VPS:
+**Prerequisite:** the Ravan stack must be running and must own the `edquate-internal` Docker network.
 
 ```bash
-git clone https://github.com/snhsish/edquate.git /opt/edquate
-cd /opt/edquate
+cd ~/ravan/version-V2
+git pull
+docker compose up -d
+```
+
+Then deploy the standalone frontend:
+
+```bash
+git clone https://github.com/snhsish/edquate.git ~/newfrontend/edquate
+cd ~/newfrontend/edquate
 cp .env.example .env
-# edit .env if API_BACKEND_URL differs from default
-docker compose up -d --build
+./scripts/up.sh
+```
+
+If you see `network edquate-internal declared as external, but could not be found`, start the Ravan stack first (above), or run:
+
+```bash
+docker network create edquate-internal
+cd ~/ravan/version-V2 && docker compose up -d nginx
+cd ~/newfrontend/edquate && docker compose up -d --build
 ```
 
 Configure GitHub repo secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`.
