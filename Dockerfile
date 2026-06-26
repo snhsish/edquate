@@ -1,31 +1,51 @@
-# Build stage
-FROM node:22-alpine AS builder
+FROM node:22-alpine AS base
 
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
+FROM base AS builder
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npm run build
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Production stage
-FROM node:22-alpine
+ARG API_BACKEND_URL="https://v2.edquate.com:8443"
+ENV API_BACKEND_URL=$API_BACKEND_URL
 
+ARG NEXT_PUBLIC_API_BASE="/api/v2"
+ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
+
+RUN pnpm run build
+
+FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=5173
+ENV NEXT_TELEMETRY_DISABLED=1
 
-COPY --from=builder /app/package*.json ./
-RUN npm install --omit=dev
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.* ./
-COPY --from=builder /app/node_modules ./node_modules
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
 
-EXPOSE 5173
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone /tmp/standalone
+RUN if [ -d "/tmp/standalone/app" ]; then cp -a /tmp/standalone/app/. ./; else cp -a /tmp/standalone/. ./; fi && rm -rf /tmp/standalone
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-CMD ["npm", "start"]
+USER nextjs
+
+EXPOSE 3200
+
+ENV PORT=3200
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]
